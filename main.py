@@ -1,29 +1,41 @@
-import random
-import time
+#!/usr/bin/python
+
+# Это простой бот с таймером по расписанию
+# https://schedule.readthedocs.io
+
+import time, threading, schedule
+from telebot import TeleBot
+
+bot = TeleBot('7910812368:AAG-TWuPNsDie1kxQVZUUJZ9SKzfRWCZGtM')
 
 
-eng_words = ['Hi','Bye','Task', 'Programm']
-ru_words = ['Привет','Пока','Задача', 'Программа']
-score = 0
+@bot.message_handler(commands=['help', 'start'])
+def send_welcome(message):
+    bot.reply_to(message, "Привет! Используйте /set <секунды>, чтобы установить таймер")
 
-mod = input("Выбери режим работы тренажера: 0 - добавить новые слова, 1 - тренироваться: \n")
-while ((mod != '0') and (mod != '1')):
-    mod = input("Недопустимый символ! Выбери 0 или 1. (0 - добавить новые слова, 1 - тренироваться) \n")
 
-if mod == "1":
-    print("Переведи как можно больше слов правильно! У тебя 10 попыток!")
-    for i in range(10):
-        number = random.randint(0, len(eng_words))
-        print("Как переводится слово: " + eng_words[number])
-        if input() == ru_words[number]:
-            print("Отлично!!!")
-            score += 1
-        else:
-            print("Нет... Это слово - " + ru_words[number])
-else:
-    word = input("Введите слово на русском языке: ")
-    translate = input("Введите перевод этого слова: ")
-    if len(word) > 0 and len(translate) > 0:
-        ru_words.append(word)
-        eng_words.append(translate)
-        print("Слово успешно добавлено!")
+def beep(chat_id) -> None:
+    """Отправляет сообщение 'Бип'."""
+    bot.send_message(chat_id, text='Бип!')
+
+
+@bot.message_handler(commands=['set'])
+def set_timer(message):
+    args = message.text.split()
+    if len(args) > 1 and args[1].isdigit():
+        sec = int(args[1])
+        schedule.every(sec).seconds.do(beep, message.chat.id).tag(message.chat.id)
+    else:
+        bot.reply_to(message, 'Использование: /set <секунды>')
+
+
+@bot.message_handler(commands=['unset'])
+def unset_timer(message):
+    schedule.clear(message.chat.id)
+
+
+if __name__ == '__main__':
+    threading.Thread(target=bot.infinity_polling, name='bot_infinity_polling', daemon=True).start()
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
