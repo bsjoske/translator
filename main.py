@@ -1,29 +1,35 @@
+import telebot
 import random
-import time
+import os
+import requests
 
+bot = telebot.TeleBot('7519780161:AAHfF46_C7vprQjNZENU5hgM8PKjF53U6C4')
 
-eng_words = ['Hi','Bye','Task', 'Programm']
-ru_words = ['Привет','Пока','Задача', 'Программа']
-score = 0
+def get_duck_image_url():    
+    url = 'https://random-d.uk/api/random'
+    res = requests.get(url)
+    data = res.json()
+    return data['url']
 
-mod = input("Выбери режим работы тренажера: 0 - добавить новые слова, 1 - тренироваться: \n")
-while ((mod != '0') and (mod != '1')):
-    mod = input("Недопустимый символ! Выбери 0 или 1. (0 - добавить новые слова, 1 - тренироваться) \n")
+@bot.message_handler(commands=['mem'])
+def send_mem(message):
+    meme_folder = 'pon/' 
+    if not os.path.exists(meme_folder):  
+        bot.send_message(message.chat.id, "Папка с мемами не найдена 😢")
+        return
 
-if mod == "1":
-    print("Переведи как можно больше слов правильно! У тебя 10 попыток!")
-    for i in range(10):
-        number = random.randint(0, len(eng_words))
-        print("Как переводится слово: " + eng_words[number])
-        if input() == ru_words[number]:
-            print("Отлично!!!")
-            score += 1
-        else:
-            print("Нет... Это слово - " + ru_words[number])
-else:
-    word = input("Введите слово на русском языке: ")
-    translate = input("Введите перевод этого слова: ")
-    if len(word) > 0 and len(translate) > 0:
-        ru_words.append(word)
-        eng_words.append(translate)
-        print("Слово успешно добавлено!")
+    meme_files = os.listdir(meme_folder)  
+    if meme_files:
+        meme_path = os.path.join(meme_folder, random.choice(meme_files)) 
+        with open(meme_path, 'rb') as f:
+            bot.send_photo(message.chat.id, f)
+    else:
+        bot.send_message(message.chat.id, "В папке нет мемов 😢")
+
+@bot.message_handler(commands=['duck'])
+def duck(message):
+    """По команде /duck отправляет случайное изображение утки."""
+    image_url = get_duck_image_url()
+    bot.send_photo(message.chat.id, image_url)
+
+bot.polling()
